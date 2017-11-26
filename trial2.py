@@ -10,8 +10,20 @@ import glob
 
 
 # Loading all training images into a numpy array
-#GLob the directory, and load all images and do the following in a loop!
+#Glob the directory, and load all images and do the following in a loop!
+# (Num images, size, size, numBands)
+trainInput = np.zeros((60396, 224, 224, 3))
+trainTarget = np.zeros((60396, 100352))
+listCount = 0
+# Grabbing all jpg images within train directory
+for filename in glob.glob('/data/mit1/images256/train/*.jpg'):
+    image = skimage.color.rgb2lab(skimage.io.imread(filename))
+    trainInput[listCount, :, :, 0] = image[0:224,0:224,0] 
+    trainTarget[listCount, 0:50176] = image[0:224,0:224,1] # A band ***May need to flatten() these?
+    trainTarget[listCount, 50176:] = image[0:224,0:224,2] # B band
 
+# Need to repeat above for validation set
+# Change model input to accept the new arrays of trainInput and trainTarget, set validation data as well.
 
 # Loading an initial test image
 image = skimage.io.imread('fireTruck.jpg')
