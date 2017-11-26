@@ -32,7 +32,7 @@ the output of the network can be mapped to the correct values, as it outputs [-1
 
 def main():
     # Loading an initial test image
-    image = skimage.io.imread('gsun_16b7dcdcc991ff9bdd051443d482c2f7.jpg')
+    image = skimage.io.imread('alleyway.jpg')
 
     # Moving the original image into LAB format
     labImage = skimage.color.rgb2lab((image))
@@ -52,7 +52,7 @@ def main():
     Desired_Band_B = np.array(labImage[:,:,2], dtype=float)/128.0
 
     # For the labels, must split 225,225,1 into 75,75,6 !!!
-    imageLabel = np.zeros((1,75,75,9))
+    imageLabel = np.zeros((1,75,75,18))
 
     #Splitting bands A and B into 3 equal sized arrays len=75
     A_List = []
@@ -62,11 +62,11 @@ def main():
     B_List = splitArray(Desired_Band_B)
     
     # Going through each list and creating a 75,75,6 for the two bands
-    for i in range(0,8):
-        if i < 3:
+    for i in range(0,18):
+        if i < 9:
             imageLabel[0,:,:,i] = np.array(A_List[i], dtype=float)
         else:
-            imageLabel[0,:,:,i] = np.array(B_List[i-3],dtype=float)
+            imageLabel[0,:,:,i] = np.array(B_List[i-9],dtype=float)
 
 
 
@@ -90,15 +90,48 @@ def main():
     model.add(MaxPooling2D(pool_size=(2,2)))
     model.add(Convolution2D(4,(3,3), activation='relu'))
 
-    model.add(Convolution2D(9,(3,3), activation='tanh'))
+    model.add(Convolution2D(18,(3,3), activation='tanh'))
     #model.compile(optimizer='rmsprop', loss='mse')
     sgd = SGD(lr=1e-4, momentum=0.9)
     model.compile(optimizer=sgd, loss='binary_crossentropy', metrics=['accuracy'])
 
     print( model.output_shape)
-    model.fit(x=L_input, y=imageLabel, batch_size=1, epochs=100)
+    model.fit(x=L_input, y=imageLabel, batch_size=1, epochs=200)
 
+    # Testing the image we just trained on
     testing = model.predict(L_input)
+    testing[0,:,:,:] *= 128.0
+    resA = np.zeros((225,225))
+    resB = np.zeros((225,225))
+    resA[0:75, 0:75] = (testing[0,:,:,0])
+    resA[0:75, 75:150] = (testing[0,:,:,1])
+    resA[0:75, 150:225] = testing[0,:,:,2]
+    resA[75:150, 0:75] = testing[0,:,:,3]
+    resA[75:150, 150:225] = testing[0,:,:,4]
+    resA[75:150, 150:225] = testing[0,:,:,5]
+    resA[150:225, 0:75] = testing[0,:,:,6]
+    resA[150:225, 75:150] = testing[0,:,:,7]
+    resA[150:225, 150:225] = testing[0,:,:,8]
+
+    resB[0:75, 0:75] = testing[0,:,:,9]
+    resB[0:75, 75:150] = testing[0,:,:,10]
+    resB[0:75, 150:225] = testing[0,:,:,11]
+    resB[75:150, 0:75] = testing[0,:,:,12]
+    resB[75:150, 150:225] = testing[0,:,:,13]
+    resB[75:150, 150:225] = testing[0,:,:,14]
+    resB[150:225, 0:75] = testing[0,:,:,15]
+    resB[150:225, 75:150] = testing[0,:,:,16]
+    resB[150:225, 150:225] = testing[0,:,:,17]
+
+    trialImage = np.zeros((225,225,3))
+    trialImage[:,:,0] = L_band[0:225, 0:225]
+    trialImage[:,:,1] = resA
+    trialImage[:,:,2] = resB
+    
+    saveImage = skimage.color.lab2rgb(trialImage)
+    skimage.io.imsave('meow.jpg', saveImage)
+
+
 
 #^-----------------------------------------------------------------------------main()
     
