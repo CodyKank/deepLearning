@@ -1,6 +1,6 @@
 from keras.applications.vgg16 import VGG16
 from keras.models import Model, Sequential
-from keras.layers import Dense
+from keras.layers import Dense, Flatten
 from keras.optimizers import SGD
 import numpy as np
 import skimage
@@ -85,7 +85,7 @@ desireBands[0,50176:] = (bBand[0:224,0:224]).flatten()/128.0
 sgd = SGD(lr=0.01, momentum=0.5)
 
 
-vgg16 = VGG16(weights='imagenet', input_shape=(224,224,3))
+vgg16 = VGG16(weights='imagenet', input_shape=(224,224,3), include_top=False)
 
 model = Sequential()
 model.add(vgg16)
@@ -96,6 +96,7 @@ for layer in model.layers:
     layer.trainable = False
 
 #model.add(Dense(131072, activation = 'tanh'))
+model.add(Flatten())
 model.add(Dense(100352, activation = 'tanh'))
 
 model.summary()
