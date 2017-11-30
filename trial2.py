@@ -1,6 +1,6 @@
 from keras.applications.vgg16 import VGG16
 from keras.models import Model, Sequential
-from keras.layers import Dense, Flatten
+from keras.layers import Dense, Flatten, MaxPooling2D
 from keras.optimizers import SGD
 import numpy as np
 import skimage
@@ -32,9 +32,11 @@ def get_images(path):
         image = skimage.color.rgb2lab(skimage.io.imread(filename))
         Lband = np.zeros((1, 224,224,3))
         Lband[0, :,:,0] = image[0:224,0:224,0]
-        trainTarget = np.zeros((1, 100352))
-        trainTarget[0, 0:50176] = np.array(image[0:224,0:224,1]).flatten() # A band ***May need to flatten() these?
-        trainTarget[0, 50176:] = np.array(image[0:224,0:224,2]).flatten() # B band
+        #trainTarget = np.zeros((1, 100352))
+        #trainTarget[0, 0:50176] = np.array(image[0:224,0:224,1]).flatten() # A band ***May need to flatten() these?
+        #trainTarget[0, 50176:] = np.array(image[0:224,0:224,2]).flatten() # B band
+        trainTarget = np.zeros((1, 50176))
+        trainTarget =  (np.array(image[0:224,0:224,1]).flatten()).transpose()
         yield(Lband, trainTarget)
 
 """
@@ -96,8 +98,11 @@ for layer in model.layers:
     layer.trainable = False
 
 #model.add(Dense(131072, activation = 'tanh'))
+model.add(MaxPooling2D(pool_size=(2,2)))
 model.add(Flatten())
-model.add(Dense(100352, activation = 'tanh'))
+#model.add(MaxPooling1D(pool_size=1))
+#model.add(Dense(100352, activation = 'tanh'))
+model.add(Dense(50176, activation = 'tanh'))
 
 model.summary()
 
@@ -107,7 +112,7 @@ model.compile(optimizer=sgd, loss='mean_squared_error', metrics=['accuracy'])
 model.fit_generator(trainGen, validation_data = validationGen, steps_per_epoch = 60396, validation_steps= 27894, epochs=100)
 
 testing = model.predict(x = L_input)
-
+"""
 testing = testing.transpose()
 testingA = testing[0:50176,:].reshape((224,224))*127.0*127.0
 testingB = testing[50176:,:].reshape((224,224))*127.0*127.0
@@ -122,4 +127,4 @@ testingFull[:,:,2] = testingB
 rgbsave = skimage.color.lab2rgb(testingFull)
 
 skimage.io.imsave('attempt1.jpg', skimage.color.lab2rgb(testingFull))
-
+"""

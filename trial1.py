@@ -32,7 +32,7 @@ the output of the network can be mapped to the correct values, as it outputs [-1
 
 def main():
     # Loading an initial test image
-    image = skimage.io.imread('alleyway.jpg')
+    image = skimage.io.imread('.jpg')
 
     # Moving the original image into LAB format
     labImage = skimage.color.rgb2lab((image))
@@ -48,30 +48,31 @@ def main():
     #L_input = np.array(L_band, dtype=float)
 
     #image = np.array(image, dtype=float)
-    Desired_Band_A = np.array(labImage[:,:,1], dtype=float)/128.0
-    Desired_Band_B = np.array(labImage[:,:,2], dtype=float)/128.0
+    Desired_Band_A = np.array(labImage[0:225,0:225,1], dtype=float)/128.0
+    Desired_Band_B = np.array(labImage[0:225,0:225,2], dtype=float)/128.0
 
-    # For the labels, must split 225,225,1 into 75,75,6 !!!
-    imageLabel = np.zeros((1,75,75,18))
+    # For the labels, must split 225x225 into 1250 9x9 blocks !!!
+    imageLabel = np.zeros((1,9,9,1250))
 
     #Splitting bands A and B into 3 equal sized arrays len=75
     A_List = []
 
 
+    # Splitting each band into 625 9x9 blocks
     A_List = splitArray(Desired_Band_A)
     B_List = splitArray(Desired_Band_B)
     
     # Going through each list and creating a 75,75,6 for the two bands
-    for i in range(0,18):
-        if i < 9:
+    for i in range(0,1250):
+        if i < 625:
             imageLabel[0,:,:,i] = np.array(A_List[i], dtype=float)
         else:
-            imageLabel[0,:,:,i] = np.array(B_List[i-9],dtype=float)
+            imageLabel[0,:,:,i] = np.array(B_List[i-625],dtype=float)
 
 
 
     model = Sequential()
-    model.add(Convolution2D(8, (3, 3), activation='relu', padding='same', strides=2,input_shape=(None,None,1)))
+    model.add(Convolution2D(8, (3, 3), activation='relu', padding='same', strides=2,input_shape=(225, 225,1)))
     model.add(Convolution2D(8, (3, 3), activation='relu', padding='same'))
     model.add(MaxPooling2D(pool_size=(2,2))) # Adding a pooling of features
     model.add(Convolution2D(64, (3, 3), activation='relu', padding='same'))
@@ -81,7 +82,7 @@ def main():
     model.add(UpSampling2D(size=(3,3)))
     model.add(Convolution2D(8,(3,3),activation='relu'))
     model.add(Convolution2D(8,(3,3),activation='relu'))
-    model.add(UpSampling2D(size=(2,2)))
+    #model.add(UpSampling2D(size=(2,2)))
     model.add(Convolution2D(8,(3,3),activation='relu'))
     model.add(Convolution2D(16, (3,3), activation='relu'))
     model.add(Convolution2D(8,(3,3), activation='relu'))
@@ -89,21 +90,26 @@ def main():
     model.add(Convolution2D(8,(3,3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
     model.add(Convolution2D(4,(3,3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2,2)))
+    #model.add(MaxPooling2D(pool_size=(2,2)))
 
-    model.add(Convolution2D(18,(3,3), activation='tanh'))
+    model.add(Convolution2D(1250,(10,10), activation='tanh'))
     #model.compile(optimizer='rmsprop', loss='mse')
-    sgd = SGD(lr=1e-4, momentum=0.9)
+    sgd = SGD(lr=0.01, momentum=0.9)
     model.compile(optimizer=sgd, loss='binary_crossentropy', metrics=['accuracy'])
 
+    model.summary()
     print( model.output_shape)
+    
     model.fit(x=L_input, y=imageLabel, batch_size=1, epochs=200)
-
+    
     # Testing the image we just trained on
     testing = model.predict(L_input)
     testing[0,:,:,:] *= 128.0
-    resA = np.zeros((225,225))
-    resB = np.zeros((225,225))
-    resA[0:75, 0:75] = (testing[0,:,:,0])
+    resA = mergeArray(testing[0,:,:,0:625])
+    resB = mergeArray(testing[0,:,:,625:])
+
+    """resA[0:75, 0:75] = (testing[0,:,:,0])
     resA[0:75, 75:150] = (testing[0,:,:,1])
     resA[0:75, 150:225] = testing[0,:,:,2]
     resA[75:150, 0:75] = testing[0,:,:,3]
@@ -122,6 +128,7 @@ def main():
     resB[150:225, 0:75] = testing[0,:,:,15]
     resB[150:225, 75:150] = testing[0,:,:,16]
     resB[150:225, 150:225] = testing[0,:,:,17]
+    """
 
     trialImage = np.zeros((225,225,3))
     trialImage[:,:,0] = L_band[0:225, 0:225]
@@ -130,7 +137,6 @@ def main():
     
     saveImage = skimage.color.lab2rgb(trialImage)
     skimage.io.imsave('meow.jpg', saveImage)
-
 
 
 #^-----------------------------------------------------------------------------main()
@@ -142,7 +148,21 @@ def splitArray(arrayToSplit):
     IN: A [225,225] list or np.array
     OUT: A python list of 9 np.arrays of size [75,75]"""
 
-    retList = []
+    size = 9
+    desired = [] # trying just a python list
+
+    # I will go 0 to 1250 due to 25 blocks of 9x9 per row equaling 625 blocks for each band of A
+    # and B, so 1250 total blocks to grab.
+
+    #Starting with once per each band, only 625 blocks
+    for j in range(0,25):
+        for i in range (0, 25):
+            desired.append(arrayToSplit[(size*i):((i+1)*size), size*j:((j+1)*size)])
+
+    return desired
+    
+    
+    """retList = []
     retList.append(arrayToSplit[0:75, 0:75])
     retList.append(arrayToSplit[0:75, 75:150])
     retList.append(arrayToSplit[0:75, 150:225])
@@ -152,8 +172,22 @@ def splitArray(arrayToSplit):
     retList.append(arrayToSplit[150:225, 0:75])
     retList.append(arrayToSplit[150:225, 75:150])
     retList.append(arrayToSplit[150:225, 150:225])
-    return retList
+    return retList"""
 #^-----------------------------------------------------------------------------splitArray(arrayToSplit)
+
+
+def mergeArray(arrayToMerge):
+    """Comments """
+
+    size = 9
+    placematCount = 0
+    desired = np.zeros((225,225))
+    for j in range(0,25):
+        for i in range(0,25):
+            desired[(size*i):((i+1)*size), size*j:((j+1)*size)] = arrayToMerge[:,:,placematCount]
+            placematCount += 1
+    return desired
+    
 
 #Standard broiler plate to run as main
 if __name__ == '__main__':
