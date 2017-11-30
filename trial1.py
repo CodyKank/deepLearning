@@ -9,6 +9,7 @@ from keras.utils import np_utils
 import skimage
 from skimage import io, color
 from keras.optimizers import SGD
+import glob
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator, array_to_img
 
@@ -31,6 +32,12 @@ the output of the network can be mapped to the correct values, as it outputs [-1
 
 
 def main():
+
+
+    trainGen = get_Arrayimages('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
+    validationGen = get_Arrayimages('/data/mit1/images256/p/validation/*.jpg') # Creating generator for validation images
+
+    """
     # Loading an initial test image
     image = skimage.io.imread('.jpg')
 
@@ -70,7 +77,7 @@ def main():
             imageLabel[0,:,:,i] = np.array(B_List[i-625],dtype=float)
 
 
-
+    """
     model = Sequential()
     model.add(Convolution2D(8, (3, 3), activation='relu', padding='same', strides=2,input_shape=(225, 225,1)))
     model.add(Convolution2D(8, (3, 3), activation='relu', padding='same'))
@@ -96,12 +103,14 @@ def main():
     model.add(Convolution2D(1250,(10,10), activation='tanh'))
     #model.compile(optimizer='rmsprop', loss='mse')
     sgd = SGD(lr=0.01, momentum=0.9)
-    model.compile(optimizer=sgd, loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
 
     model.summary()
     print( model.output_shape)
     
-    model.fit(x=L_input, y=imageLabel, batch_size=1, epochs=200)
+    model.fit_generator(trainGen, validation_data = validationGen, steps_per_epoch = 100, validation_steps=10, epochs=10)
+    #model.fit(x=L_input, y=imageLabel, batch_size=1, epochs=200)
+    """
     
     # Testing the image we just trained on
     testing = model.predict(L_input)
@@ -109,7 +118,7 @@ def main():
     resA = mergeArray(testing[0,:,:,0:625])
     resB = mergeArray(testing[0,:,:,625:])
 
-    """resA[0:75, 0:75] = (testing[0,:,:,0])
+    resA[0:75, 0:75] = (testing[0,:,:,0])
     resA[0:75, 75:150] = (testing[0,:,:,1])
     resA[0:75, 150:225] = testing[0,:,:,2]
     resA[75:150, 0:75] = testing[0,:,:,3]
@@ -128,7 +137,7 @@ def main():
     resB[150:225, 0:75] = testing[0,:,:,15]
     resB[150:225, 75:150] = testing[0,:,:,16]
     resB[150:225, 150:225] = testing[0,:,:,17]
-    """
+    
 
     trialImage = np.zeros((225,225,3))
     trialImage[:,:,0] = L_band[0:225, 0:225]
@@ -137,7 +146,7 @@ def main():
     
     saveImage = skimage.color.lab2rgb(trialImage)
     skimage.io.imsave('meow.jpg', saveImage)
-
+    """
 
 #^-----------------------------------------------------------------------------main()
     
@@ -188,6 +197,58 @@ def mergeArray(arrayToMerge):
             placematCount += 1
     return desired
     
+def get_Arrayimages(path):
+    """Returning numpy arrays of both the images and corresponding labels or desired data."""
+
+    attempt = np.zeros((1,225,225,1,10)) # Creating initialization for np array of input images
+    attemptOut = np.zeros((1, 9,9,1250,10)) # Creating initialization for np array of labels
+    count = 0
+    for filename in glob.glob(path):
+        try:
+            image = skimage.color.rgb2lab(skimage.io.imread(filename))
+        except ValueError:
+            continue # Skipping images which can't be loaded
+        Lband = np.zeros((1, 225,225,1))
+        Lband[0, :,:,0] = image[0:225,0:225,0]
+        A_List =  splitArray(image[0:225, 0:225, 1])
+        B_List = splitArray(image[0:225,0:225,2])
+                
+        for i in range(0,1250):
+            if i < 625:
+                attemptOut[0,:,:,i,count] = np.array(A_List[i], dtype=float)
+            else:
+                attemptOut[0,:,:,i,count] = np.array(B_List[i-625],dtype=float)
+
+
+        count += 1
+
+
+def get_images(path):
+    """ Generator to obtain and yield an image from a directory. YIELDS a tuple of an input band and desired bands (A + B) in a
+    flattened array
+    IN: A string denoting the full path to the images, with a wildcard ie /data/mit1/images256/meow/*.jpg"""
+    for filename in glob.glob(path):
+        try:
+            image = skimage.color.rgb2lab(skimage.io.imread(filename))
+        except ValueError:
+            continue
+        Lband = np.zeros((1, 225,225,1))
+        Lband[0, :,:,0] = image[0:225,0:225,0]
+        #trainTarget = np.zeros((1, 100352))
+        #trainTarget[0, 0:50176] = np.array(image[0:224,0:224,1]).flatten() # A band ***May need to flatten() these?
+        #trainTarget[0, 50176:] = np.array(image[0:224,0:224,2]).flatten() # B band
+        A_List =  splitArray(image[0:225, 0:225, 1])
+        B_List = splitArray(image[0:225,0:225,2])
+        imageLabel = np.zeros((1,9,9,1250))
+
+        for i in range(0,1250):
+            if i < 625:
+                imageLabel[0,:,:,i] = np.array(A_List[i], dtype=float)
+            else:
+                imageLabel[0,:,:,i] = np.array(B_List[i-625],dtype=float)
+
+        yield(Lband, imageLabel)
+
 
 #Standard broiler plate to run as main
 if __name__ == '__main__':
