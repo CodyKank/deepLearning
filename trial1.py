@@ -34,8 +34,10 @@ the output of the network can be mapped to the correct values, as it outputs [-1
 def main():
 
 
-    trainGen = get_Arrayimages('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
-    validationGen = get_Arrayimages('/data/mit1/images256/p/validation/*.jpg') # Creating generator for validation images
+    #trainGen = get_Arrayimages('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
+    #validationGen = get_Arrayimages('/data/mit1/images256/p/validation/*.jpg') # Creating generator for validation images
+    trainGen = get_images('/data/mit1/images256/train/*.jpg') # Creating generator for training images
+    validationGen = get_images('/data/mit1/images256/validation/*.jpg') # Creating generator for validation images
 
     """
     # Loading an initial test image
@@ -102,13 +104,15 @@ def main():
 
     model.add(Convolution2D(1250,(10,10), activation='tanh'))
     #model.compile(optimizer='rmsprop', loss='mse')
-    sgd = SGD(lr=0.01, momentum=0.9)
-    model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
+    sgd = SGD(lr=0.01, momentum=0.5)
+    model.compile(optimizer=sgd, loss='mean_squared_error', metrics=['accuracy'])
 
     model.summary()
     print( model.output_shape)
     
-    model.fit_generator(trainGen, validation_data = validationGen, steps_per_epoch = 100, validation_steps=10, epochs=10)
+    #model.fit_generator(trainGen, validation_data = validationGen, steps_per_epoch = 10, validation_steps=5, epochs=10)
+    model.fit_generator(trainGen, steps_per_epoch = 10, epochs=10)
+    model.save('deepCorloziationWeights.h5')
     #model.fit(x=L_input, y=imageLabel, batch_size=1, epochs=200)
     """
     
@@ -227,7 +231,12 @@ def get_images(path):
     """ Generator to obtain and yield an image from a directory. YIELDS a tuple of an input band and desired bands (A + B) in a
     flattened array
     IN: A string denoting the full path to the images, with a wildcard ie /data/mit1/images256/meow/*.jpg"""
-    for filename in glob.glob(path):
+    fileList = glob.glob(path)
+    listSize = len(fileList)
+    fileCount = 0 # which file we're working with
+    #for filename in glob.glob(path):
+    while True:
+        filename = fileList[fileCount]
         try:
             image = skimage.color.rgb2lab(skimage.io.imread(filename))
         except ValueError:
@@ -247,6 +256,9 @@ def get_images(path):
             else:
                 imageLabel[0,:,:,i] = np.array(B_List[i-625],dtype=float)
 
+        fileCount += 1 # Moving to the next file
+        if fileCount == listSize:
+            fileCount = 0 # Resetting fileCount
         yield(Lband, imageLabel)
 
 
