@@ -43,7 +43,7 @@ def get_Arrayimages(path):
 model = load_model('deepCorloziationWeights.h5')
 
 # Loading an initial test image
-image = skimage.io.imread('alleyway.jpg')
+image = skimage.io.imread('pasture.jpg')
 # Moving the original image into LAB format
 labImage = skimage.color.rgb2lab((image))
 #labImage.reshape(225,225,3)
@@ -60,8 +60,8 @@ L_input[0,:,:,0] = L_band[0:225,0:225]
 # Testing the image we just trained on
 testing = model.predict(L_input)
 testing[0,:,:,:] *= 128.0
-resA = mergeArray(testing[0,:,:,0:625])
-resB = mergeArray(testing[0,:,:,625:])
+resA = mergeArray(testing[0,:,:,0:625]*128.0)
+resB = mergeArray(testing[0,:,:,625:]*128.0)
 
 """resA[0:75, 0:75] = (testing[0,:,:,0])
 resA[0:75, 75:150] = (testing[0,:,:,1])

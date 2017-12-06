@@ -36,7 +36,7 @@ def main():
 
     #trainGen = get_Arrayimages('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
     #validationGen = get_Arrayimages('/data/mit1/images256/p/validation/*.jpg') # Creating generator for validation images
-    trainGen = get_images('/data/mit1/images256/train/*.jpg') # Creating generator for training images
+    trainGen = get_images('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
     validationGen = get_images('/data/mit1/images256/validation/*.jpg') # Creating generator for validation images
 
     """
@@ -110,8 +110,8 @@ def main():
     model.summary()
     print( model.output_shape)
     
-    #model.fit_generator(trainGen, validation_data = validationGen, steps_per_epoch = 10, validation_steps=5, epochs=10)
-    model.fit_generator(trainGen, steps_per_epoch = 10, epochs=10)
+    #model.fit_generator(trainGen, validation_data = validationGen, steps_per_epoch = 30, validation_steps=20, epochs=10)
+    model.fit_generator(trainGen, steps_per_epoch =150, epochs=10)
     model.save('deepCorloziationWeights.h5')
     #model.fit(x=L_input, y=imageLabel, batch_size=1, epochs=200)
     """
@@ -234,7 +234,6 @@ def get_images(path):
     fileList = glob.glob(path)
     listSize = len(fileList)
     fileCount = 0 # which file we're working with
-    #for filename in glob.glob(path):
     while True:
         filename = fileList[fileCount]
         try:
@@ -243,11 +242,8 @@ def get_images(path):
             continue
         Lband = np.zeros((1, 225,225,1))
         Lband[0, :,:,0] = image[0:225,0:225,0]
-        #trainTarget = np.zeros((1, 100352))
-        #trainTarget[0, 0:50176] = np.array(image[0:224,0:224,1]).flatten() # A band ***May need to flatten() these?
-        #trainTarget[0, 50176:] = np.array(image[0:224,0:224,2]).flatten() # B band
-        A_List =  splitArray(image[0:225, 0:225, 1])
-        B_List = splitArray(image[0:225,0:225,2])
+        A_List =  splitArray(image[0:225, 0:225, 1]/128.0)
+        B_List = splitArray(image[0:225,0:225,2]/128.0)
         imageLabel = np.zeros((1,9,9,1250))
 
         for i in range(0,1250):
