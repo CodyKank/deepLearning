@@ -1,5 +1,6 @@
+#!/usr/bin/python
 from keras.models import load_model
-import skimage
+import skimage, sys
 from skimage import io, color
 import numpy as np
 
@@ -43,7 +44,8 @@ def get_Arrayimages(path):
 model = load_model('deepCorloziationWeights.h5')
 
 # Loading an initial test image
-image = skimage.io.imread('pasture.jpg')
+#image = skimage.io.imread('islet.jpg')
+image = skimage.io.imread(str(sys.argv[1]))
 # Moving the original image into LAB format
 labImage = skimage.color.rgb2lab((image))
 #labImage.reshape(225,225,3)
