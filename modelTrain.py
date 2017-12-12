@@ -31,8 +31,8 @@ def main():
     #trainGen = get_Arrayimages('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
     #validationGen = get_Arrayimages('/data/mit1/images256/p/validation/*.jpg') # Creating generator for validation images
     #trainGen = get_images('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
-    trainGen = get_images('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
-    validationGen = get_images('/data/mit1/images256/tempTrain/*jpg') # Creating generator for validation images
+    trainGen = get_images('/data/mit1/good_train/*.jpg') # Creating generator for training images
+    validationGen = get_images('/data/mit1/valid_good/*jpg') # Creating generator for validation images
 
     model = Sequential()
     model.add(Convolution2D(8, (3, 3), activation='relu', padding='same', strides=2,input_shape=(225, 225,1)))
@@ -59,14 +59,14 @@ def main():
 
     model.add(Convolution2D(1250,(9,9), activation='tanh'))
     #model.compile(optimizer='rmsprop', loss='mse')
-    sgd = SGD(lr=0.04, momentum=0.4)
+    sgd = SGD(lr=0.04, momentum=0.6)
     model.compile(optimizer=sgd, loss='mean_squared_error', metrics=['accuracy'])
 
     model.summary()
     print( model.output_shape)
     
-    #model.fit_generator(trainGen, validation_data = validationGen, steps_per_epoch = 100, validation_steps=10, epochs=5)
-    model.fit_generator(trainGen, steps_per_epoch = 1181, epochs=2)
+    model.fit_generator(trainGen, validation_data = validationGen, steps_per_epoch = 3115, validation_steps= 401, epochs=4)
+    #model.fit_generator(trainGen, steps_per_epoch = 1573, epochs=2)
     model.save('deepCorloziationWeights.h5')
     #model.fit(x=L_input, y=imageLabel, batch_size=1, epochs=200)
 
@@ -160,7 +160,7 @@ def get_images(path):
         except ValueError:
             continue
         Lband = np.zeros((1, 225,225,1))
-        Lband[0, :,:,0] = image[0:225,0:225,0]/100
+        Lband[0, :,:,0] = image[0:225,0:225,0]/100.0
         A_List =  splitArray(image[0:225, 0:225, 1]/128.0)
         B_List = splitArray(image[0:225,0:225,2]/128.0)
         imageLabel = np.zeros((1,9,9,1250))

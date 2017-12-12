@@ -61,7 +61,7 @@ L_input[0,:,:,0] = L_band[0:225,0:225]
 
 # Testing the image we just trained on
 testing = model.predict(L_input)
-testing[0,:,:,:] *= 128.0
+#testing[0,:,:,:] *= 128.0
 resA = mergeArray(testing[0,:,:,0:625]*128.0)
 resB = mergeArray(testing[0,:,:,625:]*128.0)
 
