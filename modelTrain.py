@@ -65,18 +65,17 @@ def main():
     
 
 def splitArray(arrayToSplit):
-    """Function to split an array of [225,225] into 9 equal arrays of [75,75].
-    An image is broken up into a grid of 75x75 portions.
+    """Function to split an array of [225,225] into 625 equal arrays of [9,9].
+    An image is broken up into a grid of 9x9 portions.
     IN: A [225,225] list or np.array
-    OUT: A python list of 9 np.arrays of size [75,75]"""
+    OUT: A python list of 25 np.arrays of size [9,9]"""
 
     size = 9
     desired = [] # trying just a python list
 
-    # I will go 0 to 1250 due to 25 blocks of 9x9 per row equaling 625 blocks for each band of A
+    # I will go 0 to 25 due to 25 blocks of 9x9 per row equaling 625 blocks for each band of A
     # and B, so 1250 total blocks to grab.
 
-    #Starting with once per each band, only 625 blocks
     for j in range(0,25):
         for i in range (0, 25):
             desired.append(arrayToSplit[(size*i):((i+1)*size), size*j:((j+1)*size)])
