@@ -28,9 +28,6 @@ the output of the network can be mapped to the correct values, as it outputs [-1
 def main():
 
 
-    #trainGen = get_Arrayimages('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
-    #validationGen = get_Arrayimages('/data/mit1/images256/p/validation/*.jpg') # Creating generator for validation images
-    #trainGen = get_images('/data/mit1/images256/p/newPastures/*.jpg') # Creating generator for training images
     trainGen = get_images('/data/mit1/good_train/*.jpg') # Creating generator for training images
     validationGen = get_images('/data/mit1/valid_good/*jpg') # Creating generator for validation images
 
@@ -55,10 +52,7 @@ def main():
     model.add(MaxPooling2D(pool_size=(2,2)))
     model.add(Convolution2D(4,(3,3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    #model.add(MaxPooling2D(pool_size=(2,2)))
-
     model.add(Convolution2D(1250,(9,9), activation='tanh'))
-    #model.compile(optimizer='rmsprop', loss='mse')
     sgd = SGD(lr=0.04, momentum=0.6)
     model.compile(optimizer=sgd, loss='mean_squared_error', metrics=['accuracy'])
 
@@ -66,10 +60,7 @@ def main():
     print( model.output_shape)
     
     model.fit_generator(trainGen, validation_data = validationGen, steps_per_epoch = 3115, validation_steps= 401, epochs=4)
-    #model.fit_generator(trainGen, steps_per_epoch = 1573, epochs=2)
     model.save('deepCorloziationWeights.h5')
-    #model.fit(x=L_input, y=imageLabel, batch_size=1, epochs=200)
-
 #^-----------------------------------------------------------------------------main()
     
 
@@ -91,24 +82,13 @@ def splitArray(arrayToSplit):
             desired.append(arrayToSplit[(size*i):((i+1)*size), size*j:((j+1)*size)])
 
     return desired
-    
-    
-    """retList = []
-    retList.append(arrayToSplit[0:75, 0:75])
-    retList.append(arrayToSplit[0:75, 75:150])
-    retList.append(arrayToSplit[0:75, 150:225])
-    retList.append(arrayToSplit[75:150, 0:75])
-    retList.append(arrayToSplit[75:150, 75:150])
-    retList.append(arrayToSplit[75:150, 150:225])
-    retList.append(arrayToSplit[150:225, 0:75])
-    retList.append(arrayToSplit[150:225, 75:150])
-    retList.append(arrayToSplit[150:225, 150:225])
-    return retList"""
 #^-----------------------------------------------------------------------------splitArray(arrayToSplit)
 
 
 def mergeArray(arrayToMerge):
-    """Comments """
+    """Takes in an array which is meant to be 3 dimensions and containing the different grid-portions
+    of A and B bands. It mashes each section next to each other in the proper order from the given
+    array and returns a 225x225 array which is a complete A or B band."""
 
     size = 9
     placematCount = 0
@@ -118,33 +98,7 @@ def mergeArray(arrayToMerge):
             desired[(size*i):((i+1)*size), size*j:((j+1)*size)] = arrayToMerge[:,:,placematCount]
             placematCount += 1
     return desired
-    
-def get_Arrayimages(path):
-    """Returning numpy arrays of both the images and corresponding labels or desired data."""
-
-    attempt = np.zeros((1,225,225,1,10)) # Creating initialization for np array of input images
-    attemptOut = np.zeros((1, 9,9,1250,10)) # Creating initialization for np array of labels
-    count = 0
-    for filename in glob.glob(path):
-        try:
-            image = skimage.color.rgb2lab(skimage.io.imread(filename))
-        except ValueError:
-            print "Error in image {0}".format(filename)
-            continue # Skipping images which can't be loaded
-        Lband = np.zeros((1, 225,225,1))
-        Lband[0, :,:,0] = image[0:225,0:225,0]
-        A_List =  splitArray(image[0:225, 0:225, 1])
-        B_List = splitArray(image[0:225,0:225,2])
-                
-        for i in range(0,1250):
-            if i < 625:
-                attemptOut[0,:,:,i,count] = np.array(A_List[i], dtype=float)
-            else:
-                attemptOut[0,:,:,i,count] = np.array(B_List[i-625],dtype=float)
-
-
-        count += 1
-
+#^-----------------------------------------------------------------------------mergeArray(arrayToMerge)    
 
 def get_images(path):
     """ Generator to obtain and yield an image from a directory. YIELDS a tuple of an input band and desired bands (A + B) in a
@@ -175,8 +129,8 @@ def get_images(path):
         if fileCount == listSize:
             fileCount = 0 # Resetting fileCount
         yield(Lband, imageLabel)
+#^-----------------------------------------------------------------------------get_images(path)
 
-
-#Standard broiler plate to run as main
+#Standard boiler plate to run as main
 if __name__ == '__main__':
     main()
